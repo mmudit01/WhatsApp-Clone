@@ -9,8 +9,8 @@ import '../PageResizing/Variables.dart';
 import '../PageResizing/WidgetResizing.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-final _firestore = Firestore.instance;
-FirebaseUser loggedInUser;
+final _firestore = FirebaseFirestore.instance;
+User loggedInUser;
 String groupChatId;
 String _loggedInUser;
 
@@ -89,8 +89,8 @@ class _ChatScreenState extends State<ChatScreen> {
     readLocal();
   }
 
-  readLocal() async {
-    final user = await _auth.currentUser();
+  readLocal() {
+    final user = _auth.currentUser;
 
     if (user.uid.hashCode <= peerId.hashCode) {
       groupChatId = '${user.uid}-$peerId';
@@ -101,9 +101,9 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() {});
   }
 
-  void getCurrentUser() async {
+  void getCurrentUser() {
     try {
-      final user = await _auth.currentUser();
+      final user = _auth.currentUser;
       if (user != null) {
         loggedInUser = user;
         id = user.uid;
@@ -130,22 +130,22 @@ class _ChatScreenState extends State<ChatScreen> {
 
             _firestore
                 .collection('data')
-                .document('user')
+                .doc('user')
                 .collection(loggedInUser.email)
-                .document(peerId)
-                .updateData(
+                .doc(peerId)
+                .update(
               {
                 'last checked': dateTime,
               },
             );
             _firestore
                 .collection('data')
-                .document('data')
+                .doc('data')
                 .collection('messages')
-                .document(groupChatId)
+                .doc(groupChatId)
                 .collection(groupChatId)
-                .document('SeenFeature')
-                .updateData(
+                .doc('SeenFeature')
+                .update(
               {
                 '${_loggedInUser.substring(0, _loggedInUser.indexOf('.'))}':
                     dateTime,
@@ -223,14 +223,14 @@ class _ChatScreenState extends State<ChatScreen> {
                                   if (messageText != '') {
                                     _firestore
                                         .collection('data')
-                                        .document('data')
+                                        .doc('data')
                                         .collection('messages')
-                                        .document(groupChatId)
+                                        .doc(groupChatId)
                                         .collection(groupChatId)
-                                        .document(DateTime.now()
+                                        .doc(DateTime.now()
                                             .millisecondsSinceEpoch
                                             .toString())
-                                        .setData(
+                                        .set(
                                       {
                                         'text':
                                             messageText.trimRight().trimLeft(),
@@ -242,10 +242,10 @@ class _ChatScreenState extends State<ChatScreen> {
                                     check
                                         ? _firestore
                                             .collection('data')
-                                            .document('user')
+                                            .doc('user')
                                             .collection(loggedInUser.email)
-                                            .document(peerId)
-                                            .setData({
+                                            .doc(peerId)
+                                            .set({
                                             'last message': dateTime,
                                             'message': messageText,
                                             'user': peerName,
@@ -253,10 +253,10 @@ class _ChatScreenState extends State<ChatScreen> {
                                           })
                                         : _firestore
                                             .collection('data')
-                                            .document('user')
+                                            .doc('user')
                                             .collection(loggedInUser.email)
-                                            .document(peerId)
-                                            .updateData({
+                                            .doc(peerId)
+                                            .update({
                                             'last message': dateTime,
                                             'message': messageText,
                                             'user': peerName,
@@ -264,10 +264,10 @@ class _ChatScreenState extends State<ChatScreen> {
                                     check
                                         ? _firestore
                                             .collection('data')
-                                            .document('user')
+                                            .doc('user')
                                             .collection(peerName)
-                                            .document(loggedInUser.uid)
-                                            .setData({
+                                            .doc(loggedInUser.uid)
+                                            .set({
                                             'last message': dateTime,
                                             'message': messageText,
                                             'user': loggedInUser.email,
@@ -275,7 +275,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                           })
                                         : _firestore
                                             .collection('data')
-                                            .document('user')
+                                            .doc('user')
                                             .collection(peerName)
                                             .document(loggedInUser.uid)
                                             .updateData({
@@ -354,16 +354,16 @@ class MessagesStream extends StatelessWidget {
         }
         final messages = snapshot.data.documents.reversed;
         var map = {};
-        messages.forEach((e) => map[e.documentID] = e.data);
+        messages.forEach((e) => map[e.documentID] = e.data());
 
         List<MessageBubble> messageBubbles = [];
         print(messageBubbles.length);
         for (var message in messages) {
           if (message.documentID != 'SeenFeature') {
-            final messageText = message.data['text'];
-            final messageSender = message.data['sender'];
+            final messageText = message.data()['text'];
+            final messageSender = message.data()['sender'];
             final currentUser = loggedInUser.email;
-            final dateTime = message.data['date'];
+            final dateTime = message.data()['date'];
 
             final messageBubble = MessageBubble(
               sender: messageSender,
@@ -371,7 +371,7 @@ class MessagesStream extends StatelessWidget {
               date: dateTime,
               isMe: currentUser == messageSender ? true : false,
               seen: map['SeenFeature'],
-              reciever: message.data['reciever'],
+              reciever: message.data()['reciever'],
             );
 
             messageBubbles.add(messageBubble);

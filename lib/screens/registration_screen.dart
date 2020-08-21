@@ -9,7 +9,7 @@ import 'menu_screen.dart';
 
 import 'package:modal_progress_hud/modal_progress_hud.dart';
 
-final _firestore = Firestore.instance;
+final _firestore = FirebaseFirestore.instance;
 
 class RegistrationScreen extends StatefulWidget {
   static const String id = 'registration_screen';
@@ -92,20 +92,20 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       final users =
                           await _firestore.collection('user').getDocuments();
                       for (var user in users.documents) {
-                        if (user.data['sender'] != email)
+                        if (user.data()['sender'] != email)
                           _firestore
                               .collection('user')
                               .document(email)
                               .collection(email)
-                              .document(user.data['uid'])
-                              .setData({
-                            'sender': user.data['sender'],
+                              .document(user.data()['uid'])
+                              .set({
+                            'sender': user.data()['sender'],
                             'message': null,
                           });
                         _firestore
                             .collection('user')
-                            .document(user.data['sender'])
-                            .collection(user.data['sender'])
+                            .document(user.data()['sender'])
+                            .collection(user.data()['sender'])
                             .document(newUser.user.uid)
                             .setData({
                           'sender': email,
@@ -120,6 +120,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     });
                   } catch (e) {
                     if (e is PlatformException) {
+                      print(e);
                       if (e.code == 'ERROR_EMAIL_ALREADY_IN_USE') {
                         setState(() {
                           showSpinner = false;

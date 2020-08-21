@@ -9,9 +9,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import './chat_screen.dart';
 
-FirebaseUser loggedInUser;
-final firestore = Firestore.instance;
-final _firestore = Firestore.instance;
+User loggedInUser;
+final firestore = FirebaseFirestore.instance;
+final _firestore = FirebaseFirestore.instance;
 String groupChatId;
 
 String _loggedInUser;
@@ -33,9 +33,9 @@ class _MessagePageState extends State<MessagePage> {
     getCurrentUser();
   }
 
-  void getCurrentUser() async {
+  void getCurrentUser() {
     try {
-      final user = await _auth.currentUser();
+      final user = _auth.currentUser;
       if (user != null) {
         loggedInUser = user;
 
@@ -247,7 +247,7 @@ class MessagesStream extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: Firestore.instance
+      stream: FirebaseFirestore.instance
           .collection('data')
           .document('user')
           .collection(_loggedInUser)
@@ -270,9 +270,9 @@ class MessagesStream extends StatelessWidget {
           List<MessageList> searchLists = [];
 
           for (var message in messages) {
-            final messageSender = message.data['user'];
-            final messageText = message.data['message'];
-            final dateTime = message.data['last message'];
+            final messageSender = message.data()['user'];
+            final messageText = message.data()['message'];
+            final dateTime = message.data()['last message'];
 
             if (loggedInUser.uid.hashCode <= message.documentID.hashCode) {
               groupChatId = '${loggedInUser.uid}-${message.documentID}';
@@ -285,12 +285,12 @@ class MessagesStream extends StatelessWidget {
               text: messageText,
               date: dateTime,
               document: message,
-              lastOpened: message.data['last checked'],
+              lastOpened: message.data()['last checked'],
               groupChatId: groupChatId,
             );
 
             if (searchText != null && searchText != '') {
-              if (message.data['user'].toLowerCase().contains(searchText)) {
+              if (message.data()['user'].toLowerCase().contains(searchText)) {
                 searchLists.add(
                   messageList,
                 );
@@ -553,8 +553,8 @@ class MessageList extends StatelessWidget {
             MaterialPageRoute(
               builder: (context) => ChatScreen(
                 peerId: document.documentID,
-                peerName: document['user'],
-                peerAvatar: document['photoUrl'],
+                peerName: document.data()['user'],
+                peerAvatar: document.data()['photoUrl'],
                 check: false,
               ),
             ),
@@ -569,7 +569,7 @@ class MessagesStreamStart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: Firestore.instance
+      stream: FirebaseFirestore.instance
           .collection('user')
           .document(_loggedInUser)
           .collection(_loggedInUser)
@@ -585,8 +585,8 @@ class MessagesStreamStart extends StatelessWidget {
           List<Test> messageLists = [];
 
           for (var message in messages) {
-            final messageSender = message.data['sender'];
-            final messageText = message.data['message'];
+            final messageSender = message.data()['sender'];
+            final messageText = message.data()['message'];
 
             if (loggedInUser.uid.hashCode <= message.documentID.hashCode) {
               groupChatId = '${loggedInUser.uid}-${message.documentID}';
@@ -706,8 +706,8 @@ class Test extends StatelessWidget {
           MaterialPageRoute(
             builder: (context) => ChatScreen(
               peerId: document.documentID,
-              peerName: document['sender'],
-              peerAvatar: document['photoUrl'],
+              peerName: document.data()['sender'],
+              peerAvatar: document.data()['photoUrl'],
               check: true,
             ),
           ),
